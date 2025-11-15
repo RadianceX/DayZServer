@@ -1,0 +1,45 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM steamcmd/steamcmd:ubuntu-18
+        ENV DEBIAN_FRONTEND=noninteractive
+        RUN apt-get update && \
+            apt-get install -y libcap-dev && \
+            rm -rf /var/lib/apt/lists/*
+        RUN addgroup --gid 1000 admin && \
+            adduser --no-create-home --uid 1000 --gid 1000 admin 
+        ENV SERVER_DIR=/server
+        RUN mkdir -p $${SERVER_DIR}
+        RUN chown -R admin:admin /root/
+        USER admin
+        RUN steamcmd +quit
+
+    ports:
+      - "2306-2309:2306-2309/udp"
+      - "27017:27017/udp"
+  
+    volumes:
+      - ./server:/server
+      - ./serverDZ.cfg:/server/serverDZ.cfg:ro
+    
+    user: "1000:1000"
+    env_file: ".env"
+    entrypoint: ["/bin/sh","-c"]
+    
+    command: 
+      - |
+        steamcmd \
+          +force_install_dir "$${SERVER_DIR}" \
+          +login "$${STEAM_CMD_USER}" "$${STEAM_CMD_PASSWORD}" \
+          +app_update 223350 \
+          +quit
+  
+        cd $${SERVER_DIR}
+        ./DayZServer \
+          -config="serverDZ.cfg" \
+          -mod="" \
+          -port=2306 \
+          -steamQueryPort=27017 \
+          -profiles="profiles"
