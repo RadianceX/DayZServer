@@ -9,33 +9,28 @@
 ## Configure credentials
 
 To run the server you must login into account with purchased Dayz.
-Docker-compose uses following variables from .env file to log into steam   
+Update .env with the account info
 
 ``` txt
 STEAM_CMD_USER=<steam account login>
 STEAM_CMD_PASSWORD=<steam account password>
 ```
 
-## Configure server
+## Select mods to install
 
-Edit ./serverDZ.cfg
-
-## Install mods
-
-Follow this guide https://steamcommunity.com/app/221100/discussions/0/4794664409789522473/ to install mods
+To install mods edit MOD_IDS in .env file. Scripts will automatically download mods when you start the container.
 
 ## Run the server
 
 Execute following command in the terminal
 ```
-docker compose up --build --force-recreate
+docker compose up
 ```
 
 ## Connect from DayZ Launcher
 
 - Run DayZ Launcher
-- Go to Parameters > ALL PARAMETERS tab
+- Go to tab Parameters > ALL PARAMETERS
 - Go to Client section and set following parameters
   - Server address: 127.0.0.1
   - Server Port: 2306
-  - Server Password: 123456

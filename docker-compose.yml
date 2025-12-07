@@ -6,8 +6,8 @@ services:
         FROM steamcmd/steamcmd:ubuntu-18
         ENV DEBIAN_FRONTEND=noninteractive
         RUN apt-get update && \
-            apt-get install -y libcap-dev && \
-            rm -rf /var/lib/apt/lists/*
+          apt-get install -y libcap-dev rsync && \
+          rm -rf /var/lib/apt/lists/*
         RUN addgroup --gid 1000 admin && \
             adduser --no-create-home --uid 1000 --gid 1000 admin 
         ENV SERVER_DIR=/server
@@ -21,25 +21,40 @@ services:
       - "27017:27017/udp"
   
     volumes:
+      - steam_persist:/root/.steam/
       - ./server:/server
-      - ./serverDZ.cfg:/server/serverDZ.cfg:ro
-    
+      - ./scripts:/scripts:ro
+
     user: "1000:1000"
     env_file: ".env"
-    entrypoint: ["/bin/sh","-c"]
-    
-    command: 
+    entrypoint: ["/bin/sh", "-c"]
+
+    command:
       - |
+        set -e
+        cd "$${SERVER_DIR}/"
+
+        echo "Updating DayZ Server..."
         steamcmd \
           +force_install_dir "$${SERVER_DIR}" \
           +login "$${STEAM_CMD_USER}" "$${STEAM_CMD_PASSWORD}" \
           +app_update 223350 \
           +quit
-  
-        cd $${SERVER_DIR}
+
+        echo "Installing mods..."
+        /scripts/install_mods.sh "$${MOD_IDS}" "$${SERVER_DIR}"
+
+        echo "Copying keys..."
+        /scripts/install_keys.sh "$${SERVER_DIR}" "$${SERVER_DIR}/keys"
+
+        echo "Starting server..."
         ./DayZServer \
-          -config="serverDZ.cfg" \
-          -mod="" \
+          -config="$${SERVER_DIR}/serverDZ.cfg" \
+          -mod="$${MOD_IDS}" \
           -port=2306 \
           -steamQueryPort=27017 \
-          -profiles="profiles"
+          -profiles="$${SERVER_DIR}/profiles"
+
+volumes:
+  # Persistent steam folder to skip 2FA after first login and preserve downloaded content
+  steam_persist: {}
